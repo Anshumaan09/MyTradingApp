@@ -16,6 +16,8 @@ import { AdvancedTrading } from './pages/AdvancedTrading';
 import { Analytics } from './pages/Analytics';
 import { Legal } from './pages/Legal';
 import { NotFound } from './pages/NotFound';
+import { Profile } from './pages/Profile';
+import { Landing } from './pages/Landing';
 import { useAuth } from './lib/useAuth';
 import { AuthProfileProvider, RequireAuth } from './lib/middleware.jsx';
 
@@ -38,29 +40,30 @@ function App() {
     <BrowserRouter>
       <AuthProfileProvider>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
 
           <Route
-            path="/"
             element={
               <ProtectedRoute>
                 <WorkspaceLayout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="markets" element={<MarketBrowser />} />
-            <Route path="portfolio" element={<Portfolio />} />
-            <Route path="funds" element={<Funds />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="crypto" element={<CryptoTrading />} />
-            <Route path="investments" element={<Investments />} />
-            <Route path="ai-insights" element={<AIInsights />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="advanced" element={<AdvancedTrading />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="legal" element={<Legal />} />
-            <Route path="settings" element={<Settings />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/markets" element={<MarketBrowser />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/funds" element={<Funds />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/crypto" element={<CryptoTrading />} />
+            <Route path="/investments" element={<Investments />} />
+            <Route path="/ai-insights" element={<AIInsights />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/advanced" element={<AdvancedTrading />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/legal" element={<Legal />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, AlertCircle, ArrowRight, User, Shield, CreditCard, CheckCircle2, Building2, UploadCloud, Phone, RefreshCw } from 'lucide-react';
 import { registerUser, loginUser, verifyPhoneOTP, verifyPAN, linkBankAccount, verifyDocuments } from '../lib/authController';
 
@@ -65,7 +65,7 @@ export const Auth = () => {
         try {
             if (isLogin) {
                 await loginUser({ email, password });
-                navigate('/');
+                navigate('/dashboard');
                 return;
             }
 
@@ -108,7 +108,7 @@ export const Auth = () => {
                 setSuccessMsg('KYC complete! Welcome to NexusTrade.');
             }
             else if (registrationStep === 5) {
-                navigate('/');
+                navigate('/dashboard');
             }
         } catch (err) {
             setError(err.message);
@@ -196,7 +196,8 @@ export const Auth = () => {
 
     return (
         <div className="flex-center" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-base)', padding: '2rem' }}>
-            <div className="card glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '480px', padding: '2.5rem' }}>
+            <div className="card glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '480px', padding: '2.5rem', position: 'relative' }}>
+                <Link to="/" style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s' }}>← Back to Home</Link>
 
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <div className="flex-center" style={{

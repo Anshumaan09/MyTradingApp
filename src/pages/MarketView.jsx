@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { useSymbolPrice } from '../lib/useMarketData';
+import { OptionsChain } from '../components/trading/OptionsChain';
 
 const ChartComponent = ({ basePrice = 1000, symbol }) => {
     const chartContainerRef = useRef(null);
@@ -143,6 +145,10 @@ const ChartComponent = ({ basePrice = 1000, symbol }) => {
 
 export const MarketView = ({ assetId = 'RELIANCE', assetName = 'Reliance Industries', price = 2890, change = 0.85 }) => {
     const [activeTab, setActiveTab] = useState('chart');
+    const navigate = useNavigate();
+
+    const isCrypto = assetId.includes('USDT');
+    const isOptionsEligible = !isCrypto; // Assuming non-crypto equities and indices have options
 
     // Live price for this symbol
     const { price: livePrice, isLive } = useSymbolPrice(assetId);
@@ -186,6 +192,30 @@ export const MarketView = ({ assetId = 'RELIANCE', assetName = 'Reliance Industr
                 </div>
             </div>
 
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                {isOptionsEligible && (
+                    <button
+                        className={`btn ${activeTab === 'options' ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setActiveTab('options')}
+                    >
+                        Option Chain
+                    </button>
+                )}
+                <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                        if (isCrypto) {
+                            navigate('/crypto', { state: { symbol: assetId } });
+                        } else {
+                            navigate('/orders', { state: { symbol: assetId } });
+                        }
+                    }}
+                >
+                    {isOptionsEligible ? `Trade ${assetId} F&O` : `Trade ${assetId}`}
+                </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1.5rem', flex: 1 }}>
                 <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minHeight: '550px', height: 'auto' }}>
 
@@ -220,6 +250,9 @@ export const MarketView = ({ assetId = 'RELIANCE', assetName = 'Reliance Industr
                             <div className="flex-center" style={{ height: '100%', backgroundColor: 'var(--bg-base)', borderRadius: '8px' }}>
                                 <p style={{ color: 'var(--text-muted)' }}>Order Book Depth Visualization coming soon</p>
                             </div>
+                        )}
+                        {activeTab === 'options' && (
+                            <OptionsChain underlyingSymbol={assetId} currentPrice={displayPrice} />
                         )}
                     </div>
                 </div>

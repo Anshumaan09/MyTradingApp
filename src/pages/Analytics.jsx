@@ -53,13 +53,20 @@ const PnLChart = () => {
             const series = chart.addSeries(HistogramSeries, {
                 color: '#3b82f6',
             });
-            const data = MONTHLY_PNL.map((m, i) => ({
-                time: `2026-${String(i + 10 > 12 ? i - 2 : i + 10).padStart(2, '0')}-15`,
-                value: m.pnl,
-                color: m.pnl >= 0 ? '#10b981' : '#ef4444',
-            }));
+            const data = MONTHLY_PNL.map((m, i) => {
+                const monthNum = i + 10 > 12 ? i - 2 : i + 10;
+                const year = monthNum >= 10 ? 2025 : 2026;
+                return {
+                    time: `${year}-${String(monthNum).padStart(2, '0')}-15`,
+                    value: m.pnl,
+                    color: m.pnl >= 0 ? '#10b981' : '#ef4444',
+                };
+            });
+            // Sort by time just to be absolutely safe
+            data.sort((a, b) => new Date(a.time) - new Date(b.time));
             series.setData(data);
             chart.timeScale().fitContent();
+            // ensure no duplicate logos if re-rendered
             const handleResize = () => { if (chartRef.current) chart.applyOptions({ width: chartRef.current.clientWidth }); };
             window.addEventListener('resize', handleResize);
             return () => { window.removeEventListener('resize', handleResize); chart.remove(); };

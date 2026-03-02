@@ -171,7 +171,7 @@ export const MarketBrowser = () => {
                         className="form-input"
                         style={{ paddingLeft: '2.5rem' }}
                         value={filterQuery}
-                        onChange={(e) => setFilterQuery(e.target.value)}
+                        onChange={(e) => setFilterQuery(e.target.value.toUpperCase())}
                     />
                 </div>
             </div>

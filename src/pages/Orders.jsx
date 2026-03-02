@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/useAuth';
 import { AlertTriangle, ArrowRight, ShieldCheck, Clock, History, Filter, RefreshCw } from 'lucide-react';
@@ -6,7 +7,8 @@ import { EducationOverlay } from '../components/EducationOverlay';
 
 export const Orders = () => {
     const { user } = useAuth();
-    const [symbol, setSymbol] = useState('RELIANCE');
+    const location = useLocation();
+    const [symbol, setSymbol] = useState(location.state?.symbol || 'RELIANCE');
     const [side, setSide] = useState('BUY');
     const [orderType, setOrderType] = useState('limit');
     const [quantity, setQuantity] = useState('10');

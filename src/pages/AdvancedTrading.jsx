@@ -1,57 +1,6 @@
 import React, { useState } from 'react';
-import { Layers, TrendingUp, TrendingDown, Target, Zap, ArrowUpRight, ArrowDownRight, BarChart3, Shield, DollarSign } from 'lucide-react';
+import { Layers, Shield } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
-
-// ==========================================
-// F&O Options Chain Data
-// ==========================================
-const UNDERLYING = [
-    { symbol: 'NIFTY', ltp: 22543.50, change: 0.82 },
-    { symbol: 'BANKNIFTY', ltp: 48125.30, change: 1.24 },
-    { symbol: 'RELIANCE', ltp: 2891.40, change: 0.45 },
-    { symbol: 'TCS', ltp: 3750.20, change: -0.12 },
-    { symbol: 'HDFCBANK', ltp: 1679.10, change: 1.91 },
-];
-
-const generateOptionsChain = (spot) => {
-    const strikes = [];
-    const step = spot > 10000 ? 100 : spot > 1000 ? 50 : 10;
-    const baseStrike = Math.round(spot / step) * step;
-    for (let i = -6; i <= 6; i++) {
-        const strike = baseStrike + (i * step);
-        const itm = strike < spot;
-        const dist = Math.abs(spot - strike) / spot;
-        const ceIV = 12 + Math.random() * 8 + dist * 30;
-        const peIV = 12 + Math.random() * 8 + dist * 30;
-        const timeDecay = 0.85 + Math.random() * 0.3;
-
-        strikes.push({
-            strike,
-            isATM: i === 0,
-            ce: {
-                ltp: Math.max(0.05, itm ? (spot - strike) + Math.random() * step * 0.5 : Math.random() * step * 0.3).toFixed(2),
-                oi: Math.round(50000 + Math.random() * 200000),
-                oiChange: Math.round(-5000 + Math.random() * 10000),
-                iv: ceIV.toFixed(1),
-                delta: Math.max(0.01, Math.min(0.99, 0.5 + (spot - strike) / (spot * 0.1))).toFixed(2),
-                gamma: (0.001 + Math.random() * 0.003).toFixed(4),
-                theta: (-timeDecay * (1 + dist)).toFixed(2),
-                vega: (5 + Math.random() * 10).toFixed(2),
-            },
-            pe: {
-                ltp: Math.max(0.05, !itm ? (strike - spot) + Math.random() * step * 0.5 : Math.random() * step * 0.3).toFixed(2),
-                oi: Math.round(50000 + Math.random() * 200000),
-                oiChange: Math.round(-5000 + Math.random() * 10000),
-                iv: peIV.toFixed(1),
-                delta: Math.max(-0.99, Math.min(-0.01, -0.5 + (spot - strike) / (spot * 0.1))).toFixed(2),
-                gamma: (0.001 + Math.random() * 0.003).toFixed(4),
-                theta: (-timeDecay * (1 + dist)).toFixed(2),
-                vega: (5 + Math.random() * 10).toFixed(2),
-            },
-        });
-    }
-    return strikes;
-};
 
 // ==========================================
 // Strategy Templates
@@ -80,12 +29,7 @@ const ACTIVE_IPOS = [
 // ==========================================
 export const AdvancedTrading = () => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('fno');
-    const [selectedUnderlying, setSelectedUnderlying] = useState(UNDERLYING[0]);
-    const [showGreeks, setShowGreeks] = useState(false);
-    const [optionType, setOptionType] = useState('all'); // 'all' | 'ce' | 'pe'
-
-    const optionsChain = generateOptionsChain(selectedUnderlying.ltp);
+    const [activeTab, setActiveTab] = useState('strategy');
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -97,7 +41,7 @@ export const AdvancedTrading = () => {
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                {[{ key: 'fno', label: '📊 F&O Options' }, { key: 'strategy', label: '🎯 Strategy Builder' }, { key: 'ipo', label: '🚀 IPO Corner' }].map(t => (
+                {[{ key: 'strategy', label: '🎯 Strategy Builder' }, { key: 'ipo', label: '🚀 IPO Corner' }].map(t => (
                     <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
                         background: activeTab === t.key ? 'var(--bg-surface-elevated)' : 'none', border: 'none',
                         color: activeTab === t.key ? 'var(--text-primary)' : 'var(--text-muted)', padding: '0.5rem 1rem',
@@ -105,95 +49,6 @@ export const AdvancedTrading = () => {
                     }}>{t.label}</button>
                 ))}
             </div>
-
-            {/* TAB: F&O Options Chain */}
-            {activeTab === 'fno' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {/* Underlying selector */}
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        {UNDERLYING.map(u => (
-                            <div key={u.symbol} className="card" onClick={() => setSelectedUnderlying(u)}
-                                style={{ cursor: 'pointer', padding: '0.6rem 1rem', border: selectedUnderlying.symbol === u.symbol ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)', minWidth: '130px' }}>
-                                <div style={{ fontWeight: '600', fontSize: '0.825rem' }}>{u.symbol}</div>
-                                <div className="text-mono" style={{ fontSize: '0.85rem' }}>₹{u.ltp.toLocaleString('en-IN')}</div>
-                                <div className={`text-mono ${u.change >= 0 ? 'color-success' : 'color-danger'}`} style={{ fontSize: '0.7rem' }}>{u.change >= 0 ? '+' : ''}{u.change}%</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Controls */}
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <select className="form-input" style={{ width: '140px', fontSize: '0.8rem' }} defaultValue="weekly">
-                            <option value="weekly">Weekly Expiry</option>
-                            <option value="monthly">Monthly Expiry</option>
-                            <option value="next">Next Month</option>
-                        </select>
-                        <div style={{ display: 'flex', gap: '0.35rem', backgroundColor: 'var(--bg-surface)', padding: '0.2rem', borderRadius: '6px' }}>
-                            {['all', 'ce', 'pe'].map(t => (
-                                <button key={t} className={`btn ${optionType === t ? 'btn-primary' : 'btn-secondary'}`}
-                                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }}
-                                    onClick={() => setOptionType(t)}>{t === 'all' ? 'All' : t.toUpperCase()}</button>
-                            ))}
-                        </div>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', marginLeft: 'auto' }}>
-                            <input type="checkbox" checked={showGreeks} onChange={(e) => setShowGreeks(e.target.checked)} />
-                            Show Greeks
-                        </label>
-                    </div>
-
-                    {/* Options Chain Table */}
-                    <div className="card" style={{ padding: 0, overflow: 'auto' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: optionType === 'all' ? (showGreeks ? '0.6fr 0.4fr 0.4fr 0.4fr 0.4fr 0.5fr 0.6fr 0.8fr 0.6fr 0.5fr 0.4fr 0.4fr 0.4fr 0.4fr 0.6fr' : '0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr') : (showGreeks ? '0.8fr 0.6fr 0.6fr 0.5fr 0.5fr 0.5fr 0.5fr 0.8fr' : '1fr 0.8fr 0.8fr 1fr'), fontSize: '0.7rem', fontWeight: '600', color: 'var(--text-secondary)', padding: '0.6rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface-elevated)' }}>
-                            {(optionType === 'all' || optionType === 'ce') && <>
-                                <div style={{ textAlign: 'center' }}>CE LTP</div>
-                                <div style={{ textAlign: 'center' }}>OI</div>
-                                {showGreeks && <><div style={{ textAlign: 'center' }}>Δ</div><div style={{ textAlign: 'center' }}>Γ</div><div style={{ textAlign: 'center' }}>θ</div><div style={{ textAlign: 'center' }}>IV</div></>}
-                                <div style={{ textAlign: 'center' }}>OI Chg</div>
-                            </>}
-                            <div style={{ textAlign: 'center', fontWeight: '700', color: 'var(--text-primary)' }}>STRIKE</div>
-                            {(optionType === 'all' || optionType === 'pe') && <>
-                                <div style={{ textAlign: 'center' }}>OI Chg</div>
-                                {showGreeks && <><div style={{ textAlign: 'center' }}>IV</div><div style={{ textAlign: 'center' }}>θ</div><div style={{ textAlign: 'center' }}>Γ</div><div style={{ textAlign: 'center' }}>Δ</div></>}
-                                <div style={{ textAlign: 'center' }}>OI</div>
-                                <div style={{ textAlign: 'center' }}>PE LTP</div>
-                            </>}
-                        </div>
-                        {optionsChain.map(row => (
-                            <div key={row.strike} style={{
-                                display: 'grid', gridTemplateColumns: optionType === 'all' ? (showGreeks ? '0.6fr 0.4fr 0.4fr 0.4fr 0.4fr 0.5fr 0.6fr 0.8fr 0.6fr 0.5fr 0.4fr 0.4fr 0.4fr 0.4fr 0.6fr' : '0.8fr 0.6fr 0.6fr 0.8fr 0.8fr 0.6fr 0.6fr 0.8fr') : (showGreeks ? '0.8fr 0.6fr 0.6fr 0.5fr 0.5fr 0.5fr 0.5fr 0.8fr' : '1fr 0.8fr 0.8fr 1fr'),
-                                padding: '0.45rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center',
-                                fontSize: '0.75rem', backgroundColor: row.isATM ? 'rgba(99,102,241,0.08)' : 'transparent',
-                            }}>
-                                {(optionType === 'all' || optionType === 'ce') && <>
-                                    <div className="text-mono color-success" style={{ textAlign: 'center', fontWeight: '600' }}>₹{row.ce.ltp}</div>
-                                    <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{(row.ce.oi / 1000).toFixed(0)}K</div>
-                                    {showGreeks && <>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{row.ce.delta}</div>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{row.ce.gamma}</div>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--color-danger)' }}>{row.ce.theta}</div>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{row.ce.iv}%</div>
-                                    </>}
-                                    <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem', color: row.ce.oiChange > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>{row.ce.oiChange > 0 ? '+' : ''}{(row.ce.oiChange / 1000).toFixed(1)}K</div>
-                                </>}
-                                <div className="text-mono" style={{ textAlign: 'center', fontWeight: '700', fontSize: '0.85rem', color: row.isATM ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
-                                    {row.strike.toLocaleString('en-IN')} {row.isATM && <span style={{ fontSize: '0.5rem', color: 'var(--accent-primary)' }}>ATM</span>}
-                                </div>
-                                {(optionType === 'all' || optionType === 'pe') && <>
-                                    <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem', color: row.pe.oiChange > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>{row.pe.oiChange > 0 ? '+' : ''}{(row.pe.oiChange / 1000).toFixed(1)}K</div>
-                                    {showGreeks && <>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{row.pe.iv}%</div>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--color-danger)' }}>{row.pe.theta}</div>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{row.pe.gamma}</div>
-                                        <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{row.pe.delta}</div>
-                                    </>}
-                                    <div className="text-mono" style={{ textAlign: 'center', fontSize: '0.65rem' }}>{(row.pe.oi / 1000).toFixed(0)}K</div>
-                                    <div className="text-mono color-danger" style={{ textAlign: 'center', fontWeight: '600' }}>₹{row.pe.ltp}</div>
-                                </>}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
 
             {/* TAB: Strategy Builder */}
             {activeTab === 'strategy' && (
@@ -239,88 +94,74 @@ export const AdvancedTrading = () => {
                             );
                         })}
                     </div>
-
-                    {/* Margin Calculator */}
-                    <div className="card glass-panel">
-                        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={18} /> SPAN Margin Calculator</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-                            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-surface-elevated)', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SPAN Margin</div>
-                                <div className="text-mono" style={{ fontSize: '1.1rem', fontWeight: '700' }}>₹1,24,500</div>
-                            </div>
-                            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-surface-elevated)', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Exposure Margin</div>
-                                <div className="text-mono" style={{ fontSize: '1.1rem', fontWeight: '700' }}>₹42,300</div>
-                            </div>
-                            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-surface-elevated)', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total Margin</div>
-                                <div className="text-mono" style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--accent-primary)' }}>₹1,66,800</div>
-                            </div>
-                            <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-surface-elevated)', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Premium Received</div>
-                                <div className="text-mono color-success" style={{ fontSize: '1.1rem', fontWeight: '700' }}>₹8,200</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             )}
 
             {/* TAB: IPO Corner */}
             {activeTab === 'ipo' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {ACTIVE_IPOS.map(ipo => {
-                        const statusColors = { open: '#10b981', closed: '#6b7280', upcoming: '#3b82f6' };
-                        return (
-                            <div key={ipo.name} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                <div className="flex-between">
-                                    <div>
-                                        <div style={{ fontWeight: '700', fontSize: '1.05rem' }}>{ipo.name}</div>
-                                        <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem' }}>
-                                            <span className="badge" style={{ fontSize: '0.6rem' }}>{ipo.type}</span>
-                                            <span className="badge" style={{ backgroundColor: statusColors[ipo.status] + '15', color: statusColors[ipo.status], fontSize: '0.6rem' }}>{ipo.status.toUpperCase()}</span>
-                                            <span className="badge" style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: 'var(--color-success)', fontSize: '0.6rem' }}>GMP: {ipo.gmp}</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
+                        {ACTIVE_IPOS.map(ipo => {
+                            const statusColor = ipo.status === 'open' ? 'var(--color-success)' : ipo.status === 'closed' ? 'var(--color-danger)' : 'var(--text-secondary)';
+                            return (
+                                <div key={ipo.name} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <div className="flex-between">
+                                        <div>
+                                            <div style={{ fontWeight: '700', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {ipo.name}
+                                                <span className="badge" style={{ fontSize: '0.5rem', backgroundColor: statusColor + '20', color: statusColor }}>
+                                                    {ipo.status.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{ipo.type} IPO</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Est. GMP</div>
+                                            <div className="text-mono color-success" style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ipo.gmp}</div>
                                         </div>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div className="text-mono" style={{ fontWeight: '700', fontSize: '1rem' }}>₹{ipo.price}</div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{ipo.size}</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '6px' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Price Band</div>
+                                            <div className="text-mono" style={{ fontWeight: '600', fontSize: '0.8rem' }}>₹{ipo.price}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Issue Size</div>
+                                            <div className="text-mono" style={{ fontWeight: '600', fontSize: '0.8rem' }}>{ipo.size}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Lot Size</div>
+                                            <div className="text-mono" style={{ fontWeight: '600', fontSize: '0.8rem' }}>{ipo.lot} Shares</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Timelines</div>
+                                            <div className="text-mono" style={{ fontWeight: '600', fontSize: '0.7rem' }}>{ipo.openDate} - {ipo.closeDate}</div>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
-                                    <div><div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Open</div><div style={{ fontWeight: '600' }}>{ipo.openDate}</div></div>
-                                    <div><div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Close</div><div style={{ fontWeight: '600' }}>{ipo.closeDate}</div></div>
-                                    <div><div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Listing</div><div style={{ fontWeight: '600' }}>{ipo.listing}</div></div>
-                                    <div><div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Lot Size</div><div className="text-mono" style={{ fontWeight: '600' }}>{ipo.lot}</div></div>
-                                    <div><div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Subscription</div><div className="text-mono" style={{ fontWeight: '600', color: ipo.subscription > 10 ? 'var(--color-success)' : 'var(--text-primary)' }}>{ipo.subscription > 0 ? ipo.subscription + 'x' : '—'}</div></div>
-                                    <div><div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Min Invest</div><div className="text-mono" style={{ fontWeight: '600' }}>₹{(ipo.lot * parseInt(ipo.price.split('-')[1] || ipo.price)).toLocaleString('en-IN')}</div></div>
-                                </div>
-
-                                {/* Subscription bars */}
-                                {ipo.subscription > 0 && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', padding: '0.5rem', backgroundColor: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
-                                        {[{ name: 'Retail', val: ipo.retail }, { name: 'HNI', val: ipo.hni }, { name: 'QIB', val: ipo.qib }].map(cat => (
-                                            <div key={cat.name}>
-                                                <div className="flex-between" style={{ fontSize: '0.65rem', marginBottom: '0.2rem' }}>
-                                                    <span style={{ color: 'var(--text-muted)' }}>{cat.name}</span>
-                                                    <span className="text-mono" style={{ fontWeight: '600' }}>{cat.val}x</span>
-                                                </div>
-                                                <div style={{ height: '6px', backgroundColor: 'var(--bg-base)', borderRadius: '3px', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${Math.min(100, cat.val * 5)}%`, height: '100%', backgroundColor: cat.val >= 1 ? 'var(--color-success)' : 'var(--accent-primary)', borderRadius: '3px' }}></div>
-                                                </div>
+                                    {ipo.status !== 'upcoming' && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                            <div className="flex-between" style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                                                <span>Subscription (Overall {ipo.subscription}x)</span>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <button className={`btn ${ipo.status === 'open' ? 'btn-primary' : 'btn-secondary'}`}
-                                    style={{ width: '100%', padding: '0.5rem' }}
-                                    disabled={ipo.status !== 'open'}>
-                                    {ipo.status === 'open' ? `Apply (${ipo.lot} shares)` : ipo.status === 'upcoming' ? 'Coming Soon' : 'Bidding Closed'}
-                                </button>
-                            </div>
-                        );
-                    })}
+                                            <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', backgroundColor: 'var(--bg-surface)' }}>
+                                                <div style={{ width: '40%', backgroundColor: 'var(--accent-primary)' }} title={`QIB: ${ipo.qib}x`} />
+                                                <div style={{ width: '30%', backgroundColor: 'var(--color-success)' }} title={`HNI: ${ipo.hni}x`} />
+                                                <div style={{ width: '30%', backgroundColor: 'var(--color-warning)' }} title={`Retail: ${ipo.retail}x`} />
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                                <span>QIB: {ipo.qib}x</span>
+                                                <span>HNI: {ipo.hni}x</span>
+                                                <span>Retail: {ipo.retail}x</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <button className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={ipo.status === 'closed'}>
+                                        {ipo.status === 'closed' ? 'Application Closed' : 'Apply for IPO'}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>

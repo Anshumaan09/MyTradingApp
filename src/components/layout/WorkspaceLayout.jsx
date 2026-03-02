@@ -7,22 +7,8 @@ import { CommandPalette } from '../CommandPalette';
 import { ErrorBoundary } from '../ErrorBoundary';
 
 const Sidebar = () => {
-    const { user } = useAuth();
-    const [profileName, setProfileName] = useState('');
-
-    useEffect(() => {
-        if (!user) return;
-        supabase.from('users').select('full_name').eq('id', user.id).single()
-            .then(({ data }) => { if (data?.full_name) setProfileName(data.full_name); });
-    }, [user]);
-
-    const displayName = profileName || user?.email?.split('@')[0] || 'User';
-    const initials = profileName
-        ? profileName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-        : (user?.email?.[0] || 'U').toUpperCase();
-
     const navItems = [
-        { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
+        { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Markets', path: '/markets', icon: <LineChart size={20} /> },
         { name: 'Portfolio', path: '/portfolio', icon: <Wallet size={20} /> },
         { name: 'Funds', path: '/funds', icon: <Landmark size={20} /> },
@@ -89,23 +75,25 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--bg-surface-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{initials}</span>
-                    </div>
-                    <div>
-                        <div style={{ fontSize: '0.875rem', fontWeight: '600' }}>{displayName}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pro Member</div>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
 
 const Header = ({ onOpenPalette }) => {
     const { user } = useAuth();
+    const [profileName, setProfileName] = useState('');
+
+    useEffect(() => {
+        if (!user) return;
+        supabase.from('users').select('full_name').eq('id', user.id).single()
+            .then(({ data }) => { if (data?.full_name) setProfileName(data.full_name); });
+    }, [user]);
+
+    const displayName = profileName || user?.email?.split('@')[0] || 'User';
+    const initials = profileName
+        ? profileName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        : (user?.email?.[0] || 'U').toUpperCase();
+
     const headerNav = React.useMemo(() => {
         // We'll use window.location for simple navigation
         return { goToNotifs: () => { window.location.href = '/notifications'; } };
@@ -147,9 +135,15 @@ const Header = ({ onOpenPalette }) => {
                     <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Status:</span>
                     <span className="badge badge-success">Connected</span>
                 </div>
-                <div style={{ paddingRight: '1rem', borderRight: '1px solid var(--border-subtle)' }}>
-                    <span style={{ fontSize: '0.875rem' }}>{user?.email}</span>
-                </div>
+                <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', paddingRight: '1rem', borderRight: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-surface-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: 'var(--accent-primary)', fontWeight: '700', fontSize: '0.85rem' }}>{initials}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: '600', lineHeight: 1.2 }}>{displayName}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Pro Member</span>
+                    </div>
+                </NavLink>
                 <button className="btn-icon" title="Notifications" onClick={headerNav.goToNotifs} style={{ position: 'relative' }}>
                     <Bell size={20} />
                     <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-success)' }} />
